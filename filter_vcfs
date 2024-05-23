@@ -1,0 +1,96 @@
+gatk_snps() {
+
+SCAF=$1
+
+gatk --java-options "-Xmx4g" SelectVariants \
+-R /home/centos/USS/lemurs/RefGenomes/Varecia_rubra.fa \
+--select-type-to-include SNP \
+-V ${SCAF}.vcf.gz -O ${SCAF}.rawsnps.vcf.gz
+
+}
+
+export -f gatk_snps
+
+parallel -j 20 --tmpdir tmp gatk_snps \
+:::: <(awk '{print $1}' /home/centos/USS/lemurs/RefGenomes/Varecia_rubra.fa.fai | tail -n +2) >& gatk_snps.out
+
+
+for SCAF in `awk '{print $1}' /home/centos/USS/lemurs/RefGenomes/Varecia_rubra.fa.fai`; do
+echo ${SCAF}.rawsnps.vcf.gz >> rawsnp_vcfs.txt
+done
+
+nohup bcftools concat -f rawsnp_vcfs.txt -o AllVarecia.rawsnps.vcf.gz -O z &
+bcftools tabix AllVarecia.rawsnps.vcf.gz
+
+gatk VariantsToTable \
+-R /home/centos/USS/lemurs/RefGenomes/Varecia_rubra.fa \
+-V AllVarecia.rawsnps.vcf.gz -F AN -F BaseQRankSum -F DP \
+-F FS -F MQ -F MQRankSum -F QD -F ReadPosRankSum -F SOR \
+-O AllVarecia.rawsnps.tab
+
+#Choose filter parameters with ChooseHardFilters.R
+
+nohup gatk VariantFiltration \
+-R /home/centos/USS/lemurs/RefGenomes/Varecia_rubra.fa \
+-V AllVarecia.rawsnps.vcf.gz \
+--filter-expression "QD < 5.0" --filter-name QD5 \
+--filter-expression "FS > 60.0" --filter-name FS60 \
+--filter-expression "SOR > 3.0" --filter-name SOR3 \
+--filter-expression "MQ < 40.0" --filter-name MQ40 \
+--filter-expression "MQRankSum < -5.0" --filter-name MQRS-5 \
+--filter-expression "MQRankSum > 5.0" --filter-name MQRS5 \
+--filter-expression "ReadPosRankSum < -3.0" --filter-name RPRS-3 \
+--filter-expression "ReadPosRankSum > 3.0" --filter-name RPRS3 \
+--filter-expression "AN < 160" --filter-name AN160 \
+--filter-expression "DP > 8822" --filter-name DP6800 \
+-O AllVarecia.snps.vcf.gz &
+
+nohup gatk SelectVariants --exclude-filtered \
+-R /home/centos/USS/lemurs/RefGenomes/Varecia_rubra.fa \
+-V AllVarecia.snps.vcf.gz \
+-O AllVarecia.filtsnps.vcf.gz &
+
+####Filter variant and invariant sites#######
+gatk_filt() {
+
+SCAF=$1
+
+gatk --java-options "-Xmx4g" VariantFiltration \
+-R /home/centos/USS/lemurs/RefGenomes/Varecia_rubra.fa \
+-V ${SCAF}.vcf.gz -O ${SCAF}.filttag.vcf.gz \
+--filter-expression "QD < 5.0" --filter-name QD5 \
+--filter-expression "FS > 60.0" --filter-name FS60 \
+--filter-expression "SOR > 3.0" --filter-name SOR3 \
+--filter-expression "MQ < 40.0" --filter-name MQ40 \
+--filter-expression "MQRankSum < -5.0" --filter-name MQRS-5 \
+--filter-expression "MQRankSum > 5.0" --filter-name MQRS5 \
+--filter-expression "ReadPosRankSum < -3.0" --filter-name RPRS-3 \
+--filter-expression "ReadPosRankSum > 3.0" --filter-name RPRS3 \
+--filter-expression "AN < 160" --filter-name AN160 \
+--filter-expression "DP > 8822" --filter-name DP8822 \
+--filter-expression "DP < 890" --filter-name DP890 \
+--verbosity ERROR
+}
+
+export -f gatk_filt
+
+parallel -j 20 --tmpdir tmp gatk_filt \
+:::: <(awk '{print $1}' /home/centos/USS/lemurs/RefGenomes/Varecia_rubra.fa.fai) >& gatk_filt.out
+
+
+gatk_excfilt() {
+
+SCAF=$1
+
+gatk --java-options "-Xmx4g" SelectVariants --exclude-filtered \
+-R /home/centos/USS/lemurs/RefGenomes/Varecia_rubra.fa \
+-V ${SCAF}.filttag.vcf.gz \
+-O ${SCAF}.filtered.vcf.gz
+
+}
+
+export -f gatk_excfilt
+
+parallel -j 20 --tmpdir tmp gatk_excfilt \
+:::: <(awk '{print $1}' /home/centos/USS/lemurs/RefGenomes/Varecia_rubra.fa.fai) >& gatk_excfilt.out
+
