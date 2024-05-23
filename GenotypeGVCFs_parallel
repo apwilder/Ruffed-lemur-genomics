@@ -1,0 +1,36 @@
+#######CombineGVCFs##########
+gatk_cg() {
+
+SCAF=$1
+
+ls *${SCAF}.g.vcf.gz > ${SCAF}.list
+
+gatk CombineGVCFs --variant ${SCAF}.list \
+-R /home/centos/USS/lemurs/RefGenomes/Varecia_rubra.fa \
+-O ${SCAF}.gvcf.gz
+
+}
+
+export -f gatk_cg
+
+parallel -j 20 --tmpdir tmp gatk_cg \
+:::: <(awk '{print $1}' /home/centos/USS/lemurs/RefGenomes/Varecia_rubra.fa.fai | head -n 2) >& pargatk_gc.out
+
+##########GenotypeGVCFs#############
+gatk_gg() {
+
+SCAF=$1
+
+gatk --java-options "-Xmx4g" GenotypeGVCFs \
+-R /home/centos/USS/lemurs/RefGenomes/Varecia_rubra.fa \
+--include-non-variant-sites \
+--tmp-dir /home/centos/USS/lemurs/GATK/tmp \
+-V ${SCAF}.gvcf.gz -O ${SCAF}.vcf.gz
+
+}
+
+export -f gatk_gg
+
+parallel -j 20 --tmpdir tmp gatk_gg \
+:::: <(awk '{print $1}' /home/centos/USS/lemurs/RefGenomes/Varecia_rubra.fa.fai) >& pargatk_gg.out
+
