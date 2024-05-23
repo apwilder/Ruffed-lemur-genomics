@@ -1,0 +1,45 @@
+###Sort####
+conda activate sambamba
+cd ~/USS/lemurs/Mapping
+
+lemurSort() {
+BAM=$1
+
+sambamba sort --tmpdir=tmp -t 6 -m 20G $BAM
+}
+
+#export the function
+export -f lemurSort
+
+parallel --tmpdir tmp -j 4 lemurSort :::: <(head -n 4 bamlist.txt) >& parsort.out
+
+###Dedup###
+lemurDedup() {
+SAMPLE=$1
+
+sambamba markdup -r -t 4 --sort-buffer-size=20084 --tmpdir=tmp --overflow-list-size 1000000 \
+${SAMPLE}_mVarRubv1.sorted.bam ${SAMPLE}_mVarRubv1_dedup.bam >& ${SAMPLE}_dedup.nohup
+}
+
+#export the function
+export -f lemurDedup
+
+parallel --tmpdir tmp -j 6 --colsep '\t' lemurDedup :::: <(cat ../SampleLists/AllVarecia_samplebams_oneperjob.txt) \
+>& pardedup2.out
+
+####Then merge and dedup again#####
+lemurDedup() {
+SAMPLE=$1
+BAMS=$2
+BAMS=`echo $BAMS | sed 's/.sorted.bam/_dedup.bam/g'`
+
+sambamba merge -t 4 ${SAMPLE}_mVarRubv1_mergededups.bam $BAMS >& ${SAMPLE}_merge.nohup
+
+}
+
+#export the function
+export -f lemurDedup
+
+parallel --tmpdir tmp -j 6 --colsep '\t' lemurDedup :::: \
+<(awk 'NF>2 {print}' ../SampleLists/AllVarecia_samplebams.txt | tail -n +4) \
+>& parmerge.out
