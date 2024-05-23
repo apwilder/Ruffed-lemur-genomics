@@ -1,0 +1,29 @@
+gatk ScatterIntervalsByNs \
+-O Varecia_rubra.intervals \
+-R Varecia_rubra.fa
+
+gatkjob() {
+
+BAM=$1
+INT=$2
+
+ID=`basename ${BAM} | sed 's/_mVarRubv1_dedup.bam//g'`
+ID=`echo ${ID} | sed 's/_mVarRubv1_mergededups.bam//g'`
+
+gatk --java-options "-Xmx5g" HaplotypeCaller \
+-R /home/centos/USS/lemurs/RefGenomes/Varecia_rubra.fa \
+-I ${BAM} \
+-O /home/centos/USS/lemurs/GATK/${ID}_mVarRubv1_${INT}.g.vcf.gz \
+--output-mode EMIT_ALL_CONFIDENT_SITES -ERC GVCF \
+--tmp-dir /home/centos/USS/lemurs/GATK/tmp -L ${INT} \
+>& /home/centos/USS/lemurs/GATK/gatknohups/${ID}_${INT}_gvcf.out 
+
+}
+
+export -f gatkjob
+
+parallel -j 20 --tmpdir tmp gatkjob :::: /home/centos/USS/lemurs/SampleLists/AllVarecia_samplebams_PCRfree.txt \
+:::: <(awk '{print $1}' /home/centos/USS/lemurs/RefGenomes/Varecia_rubra.fa.fai) >& pargatk.out
+
+parallel -j 20 --tmpdir tmp gatkjob :::: /home/centos/USS/lemurs/SampleLists/AllVarecia_samplebams_PCRprep.txt \
+:::: <(awk '{print $1}' /home/centos/USS/lemurs/RefGenomes/Varecia_rubra.fa.fai) >& pargatk.out
