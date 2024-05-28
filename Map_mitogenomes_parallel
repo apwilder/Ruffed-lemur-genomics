@@ -1,0 +1,88 @@
+#######Vava##########
+
+lemur_mtDNA() {
+
+ID=$1
+FASTQ=`grep ${ID} ../SampleLists/AllVarecia_SampleTable.txt | head -n 1 | cut -f1`
+
+
+source /home/centos/USS/conservation-genetics/PPM/anaconda3/etc/profile.d/conda.sh
+conda activate vep
+
+rclone copy --include "${FASTQ}_AdptTrim_P**.fastq.gz" Box_CS_CG:lemurs/TrimmedFastq .
+
+conda activate baseclone
+
+zcat ${FASTQ}_AdptTrim_P1.fastq.gz | head -n 16000000 | gzip > ${FASTQ}_sub1.fq.gz
+zcat ${FASTQ}_AdptTrim_P2.fastq.gz | head -n 16000000 | gzip > ${FASTQ}_sub2.fq.gz
+
+bwa mem -t 6 -M -R "@RG\tID:${ID}\tSM:${ID}\tLB:${FASTQ}\tPL:Illumina\t" \
+/home/centos/USS/lemurs/RefGenomes/Vvvariegata_mitogenome.fa \
+${FASTQ}_sub1.fq.gz \
+${FASTQ}_sub2.fq.gz | \
+samtools view -@ 6 -bS -F 4 -o /home/centos/USS/lemurs/mtDNA/Vava_${ID}_${FASTQ}_Vvvariegata.bam -
+
+samtools sort -O bam -o /home/centos/USS/lemurs/mtDNA/Vava_${ID}_${FASTQ}_Vvvariegata_sort.bam \
+/home/centos/USS/lemurs/mtDNA/Vava_${ID}_${FASTQ}_Vvvariegata.bam
+
+samtools mpileup -uf /home/centos/USS/lemurs/RefGenomes/Vvvariegata_mitogenome.fa \
+/home/centos/USS/lemurs/mtDNA/Vava_${ID}_${FASTQ}_Vvvariegata_sort.bam \
+| bcftools call -c | vcfutils.pl vcf2fq |
+seqtk seq -aQ64 -q20 -n N - > \
+/home/centos/USS/lemurs/mtDNA/Vava_${ID}_${FASTQ}_Vvvariegata.fasta
+
+sed -i "s/>/>Vava_${ID}/g" /home/centos/USS/lemurs/mtDNA/Vava_${ID}_${FASTQ}_Vvvariegata.fasta
+
+rm /home/centos/USS/lemurs/TrimmedFastq/${FASTQ}_AdptTrim_P* ${FASTQ}_sub*.fq.gz \
+/home/centos/USS/lemurs/mtDNA/Vava_${ID}_${FASTQ}_Vvvariegata.bam \
+/home/centos/USS/lemurs/mtDNA/Vava_${ID}_${FASTQ}_Vvvariegata_sort.bam
+
+}
+
+export -f lemur_mtDNA
+
+parallel --colsep '\t' -j 4 lemur_mtDNA :::: <(awk '$4=="Vava" {print $1}' /home/centos/USS/lemurs/SampleLists/AllVarecia_sampletable.txt | tail -n +2)
+
+#######Varu##########
+lemur_mtDNA() {
+
+ID=$1
+FASTQ=`grep ${ID} ../SampleLists/AllVarecia_SampleTable.txt | head -n 1 | cut -f1`
+
+
+source /home/centos/USS/conservation-genetics/PPM/anaconda3/etc/profile.d/conda.sh
+conda activate vep
+
+rclone copy --include "${FASTQ}_AdptTrim_P**.fastq.gz" Box_CS_CG:lemurs/TrimmedFastq .
+
+conda activate baseclone
+
+zcat ${FASTQ}_AdptTrim_P1.fastq.gz | head -n 16000000 | gzip > ${FASTQ}_sub1.fq.gz
+zcat ${FASTQ}_AdptTrim_P2.fastq.gz | head -n 16000000 | gzip > ${FASTQ}_sub2.fq.gz
+
+bwa mem -t 6 -M -R "@RG\tID:${ID}\tSM:${ID}\tLB:${FASTQ}\tPL:Illumina\t" \
+/home/centos/USS/lemurs/RefGenomes/Vrubra_mitogenome.fa \
+${FASTQ}_sub1.fq.gz \
+${FASTQ}_sub2.fq.gz | \
+samtools view -@ 6 -bS -F 4 -o /home/centos/USS/lemurs/mtDNA/Varu_${ID}_${FASTQ}_Vrubra.bam -
+
+samtools sort -O bam -o /home/centos/USS/lemurs/mtDNA/Varu_${ID}_${FASTQ}_Vrubra_sort.bam \
+/home/centos/USS/lemurs/mtDNA/Varu_${ID}_${FASTQ}_Vrubra.bam
+
+samtools mpileup -uf /home/centos/USS/lemurs/RefGenomes/Vrubra_mitogenome.fa \
+/home/centos/USS/lemurs/mtDNA/Varu_${ID}_${FASTQ}_Vrubra_sort.bam \
+| bcftools call -c | vcfutils.pl vcf2fq |
+seqtk seq -aQ64 -q20 -n N - > \
+/home/centos/USS/lemurs/mtDNA/Varu_${ID}_${FASTQ}_Vrubra.fasta
+
+sed -i "s/>/>Varu_${ID}_/g" /home/centos/USS/lemurs/mtDNA/Varu_${ID}_${FASTQ}_Vrubra.fasta
+
+rm /home/centos/USS/lemurs/TrimmedFastq/${FASTQ}_AdptTrim_P* ${FASTQ}_sub*.fq.gz \
+/home/centos/USS/lemurs/mtDNA/Varu_${ID}_${FASTQ}_Vrubra.bam \
+/home/centos/USS/lemurs/mtDNA/Varu_${ID}_${FASTQ}_Vrubra_sort.bam
+
+}
+
+export -f lemur_mtDNA
+
+parallel --colsep '\t' -j 4 lemur_mtDNA :::: <(awk '$4=="Varu" {print $1}' /home/centos/USS/lemurs/SampleLists/AllVarecia_sampletable.txt)
