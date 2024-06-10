@@ -1,0 +1,18 @@
+pixy_het() {
+
+SCAF=$1
+
+pixy --stats pi \
+--vcf ${SCAF}.filtered.vcf.gz \
+--populations ../pixy/AllVarecia_indfile.txt \
+--window_size 1000000 \
+--n_cores 4 --output_folder ../pixy \
+--output_prefix ${SCAF}.filtered
+
+}
+
+export -f pixy_het
+
+parallel -j 5 --tmpdir tmp pixy_het \
+:::: <(awk '{print $1}' /home/centos/USS/lemurs/RefGenomes/Varecia_rubra.fa.fai | grep SUPER | grep -v unloc) >& pixy_het.out
+
