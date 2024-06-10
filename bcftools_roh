@@ -1,0 +1,4 @@
+bcftools roh --AF-tag AF --threads 8 -O srz -o AllVarecia_SUPERautoz AllVarecia_SUPERautoz.filtsnps.vcf.gz &>roh.nohup
+zcat AllVarecia_SUPERautoz | awk '$1=="RG" {print}' | gzip > AllVarecia_SUPERautoz_RG.txt.gz
+zcat AllVarecia_SUPERautoz | awk '$1=="ST" {print}' | gzip > AllVarecia_SUPERautoz_ST.txt.gz
+
