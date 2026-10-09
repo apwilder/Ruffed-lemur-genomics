@@ -5,6 +5,7 @@ PREFIX=$3
 FQDIR=/home/centos/USS/lemurs/TrimmedFastq
 OUTDIR=/home/centos/USS/lemurs/ABBA_BABA
 
+#map to Lemur catta genome
 bwa mem -t 6 -M -R "@RG\tID:${SM}\tSM:${SM}\tLB:${FASTQ}\tPL:Illumina\t" \
 /home/centos/USS/lemurs/RefGenomes/GCF_020740605.2_mLemCat1.pri_genomic.fna ${FQDIR}/${FASTQ}_AdptTrim_P1.fastq.gz \
 ${FQDIR}/${FASTQ}_AdptTrim_P2.fastq.gz | \
