@@ -14,7 +14,7 @@ samtools view -@ 6 -bS -F 4 -o ${OUTDIR}/${PREFIX}_${FASTQ}_mLemCat1.bam -
 #export the function
 export -f lemurMapping
 
-#Launch in parallel. Each job takes at least 6 CPU, but I'd plan on each job using 8 since the function pipes into samtools.
+#Launch in parallel. 
 #j=the maximum number of jobs to run simultaneously
 #colsep= the input file has input variable separated by tabs
 #test_in.txt is a tab-delimited file, one line per sample listing the fastq basename, sample name I want in the bam header, and prefix for the output file
