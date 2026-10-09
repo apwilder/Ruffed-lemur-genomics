@@ -19,30 +19,12 @@ samtools view -@ 6 -bS -F 4 -o ${OUTDIR}/${PREFIX}_mVarRubv1.bam -
 #export the function
 export -f lemurMapping
 
-#Launch in parallel. Each job takes at least 6 CPU, but I'd plan on each job using 8 since the function pipes into samtools.
+#Launch in parallel.
 #j=the maximum number of jobs to run simultaneously
 #colsep= the input file has input variable separated by tabs
-#test_in.txt is a tab-delimited file, one line per sample listing the fastq basename, sample name I want in the bam header, and prefix for the output file
+#AllVarecia_SampleTable.txt is a tab-delimited file, one line per sample listing the fastq basename, sample name for the bam header, and prefix for the output file
 
 #parallel --colsep '\t' -j 4 lemurMapping :::: /home/centos/USS/lemurs/test_in.txt
-parallel --colsep '\t' -j 4 lemurMapping :::: <(cut -f 1,2,6 /home/centos/USS/lemurs/SampleLists/AllVarecia_SampleTable_unmappedFeb.txt)
+parallel --colsep '\t' -j 4 lemurMapping :::: <(cut -f 1,2,6 /home/centos/USS/lemurs/SampleLists/AllVarecia_SampleTable.txt)
 
 #the output is an unsorted bam of mapped reads
-
-#parallel peters out, so need to restart with new sample list
-#first delete fastqs of files with mapped sample
-for samp in `cut -f 6 SampleLists/AllVarecia_SampleTable_unmappedFeb.txt`; do 
-if [ -f Mapping/${samp}* ]; then 
-fq=`grep ${samp} SampleLists/AllVarecia_SampleTable_unmappedFeb.txt | cut -f1` 
-rm TrimmedFastq/${fq}*
-fi
-done
-
-#then create new list
-for samp in `cut -f 6 SampleLists/AllVarecia_SampleTable_unmappedFeb.txt`; do 
-if ! [ -f Mapping/${samp}* ]; then 
-grep ${samp} SampleLists/AllVarecia_SampleTable_unmappedFeb.txt >> SampleLists/AllVarecia_SampleTable_unmappedMar.txt
-fi
-done
-
-parallel --tmpdir Mapping/tmp --colsep '\t' -j 4 lemurMapping :::: <(cut -f 1,2,6 /home/centos/USS/lemurs/SampleLists/AllVarecia_SampleTable_unmappedApr.txt) >& parbwa.out
