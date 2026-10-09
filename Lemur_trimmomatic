@@ -1,0 +1,20 @@
+#run in screen
+cd ~/USS/lemurs/TrimmedFastq
+screen
+
+LemurTrimjob() {
+
+FASTQID=$1 # full path to fastq files using basename only (e.g. without _R1_001.fastq.gz)
+ID=`basename $FASTQID`
+
+trimmomatic PE -phred33 \
+$FASTQID'_R1_001.fastq.gz' \
+$FASTQID'_R2_001.fastq.gz' \
+$ID'_AdptTrim_P1.fastq.gz' $ID'_AdptTrim_U1.fastq.gz' \
+$ID'_AdptTrim_P2.fastq.gz' $ID'_AdptTrim_U2.fastq.gz' \
+ILLUMINACLIP:/home/centos/USS/conservation-genetics/PPM/anaconda3/share/trimmomatic-0.39-1/adapters/NexteraPE-PE.fa:2:30:10:4:true
+
+}
+export -f LemurTrimjob
+
+cat ../SampleLists/Fastqfiles_basename_incomplete3.txt | parallel -j 28 LemurTrimjob >& LemurTrimjob3.nohup
