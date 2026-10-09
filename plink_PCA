@@ -39,5 +39,12 @@ nohup plink --pca --het --file WildVaru_SUPERautoz \
 nohup plink --pca --het --file Varu_SUPERautoz \
 --out Varu_SUPERautoz --allow-extra-chr &
 
+####KING relatedness
+SAMPLES=/home/centos/USS/lemurs/SampleLists/Varu_Andranobe_2019.txt
+plink2 --make-king-table --pedmap Varecia_Wild.filtsnps --allow-extra-chr \
+--out Varu_Andranobe_2019_SUPERautoz --geno 0 --king-cutoff 0.2 \
+--keep <(awk '{print $1"\t"$1}' ${SAMPLES}) --maf 0.05
+
+
 nohup plink --pca --het --file WildVava_SUPERautoz \
 --out WildVava_SUPERautoz --allow-extra-chr &
